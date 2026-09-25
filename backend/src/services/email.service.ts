@@ -45,7 +45,54 @@ export class EmailService {
   }
 
   /**
-   * Send email using Resend HTTPS REST API (Port 443 - Works seamlessly on Render)
+   * Send email using Brevo (Sendinblue) HTTPS REST API (Port 443 - No custom domain required, sends to ANY recipient)
+   */
+  private static async sendViaBrevoHttp(to: string, fullName: string, subject: string, html: string, text: string): Promise<boolean> {
+    const apiKey = env.BREVO_API_KEY.trim();
+    if (!apiKey) {
+      throw new Error('BREVO_API_KEY is not configured in environment variables.');
+    }
+
+    const senderEmail = env.BREVO_SENDER_EMAIL || env.SMTP_USER || 'rishufren@gmail.com';
+    const senderName = env.BREVO_SENDER_NAME || 'WaterWatch';
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: {
+          name: senderName,
+          email: senderEmail,
+        },
+        to: [
+          {
+            email: to,
+            name: fullName || 'Technician',
+          },
+        ],
+        subject,
+        htmlContent: html,
+        textContent: text,
+      }),
+    });
+
+    const data = (await response.json()) as any;
+
+    if (!response.ok) {
+      const errorMsg = data?.message || JSON.stringify(data);
+      throw new Error(`Brevo API Error (${response.status}): ${errorMsg}`);
+    }
+
+    console.log(`✉️ OTP email successfully delivered to ${to} via Brevo HTTPS API (MessageId: ${data.messageId || 'OK'})`);
+    return true;
+  }
+
+  /**
+   * Send email using Resend HTTPS REST API (Port 443 - Works on Render)
    */
   private static async sendViaResendHttp(to: string, subject: string, html: string, text: string): Promise<boolean> {
     const apiKey = env.RESEND_API_KEY.trim();
@@ -158,7 +205,7 @@ export class EmailService {
     const plainText = `Hello ${fullName},\n\nYour WaterWatch verification code is: ${otp}\n\nThis code expires in ${expiresInMinutes} minutes.\n\nWaterWatch Smart City Team`;
 
     // 1. Console / Development mode
-    if (env.EMAIL_PROVIDER === 'console' || (!env.RESEND_API_KEY && !env.SMTP_USER && !env.SMTP_HOST)) {
+    if (env.EMAIL_PROVIDER === 'console' || (!env.BREVO_API_KEY && !env.RESEND_API_KEY && !env.SMTP_USER && !env.SMTP_HOST)) {
       console.log(`
 📧 ========================================================
    [DEV/CONSOLE EMAIL SERVICE]
@@ -171,7 +218,28 @@ export class EmailService {
       return true;
     }
 
-    // 2. Resend HTTPS API (Port 443 - Recommended for cloud hosting like Render)
+    // 2. Brevo HTTPS REST API (Port 443 - Recommended: sends to ANY email without custom domain)
+    if (env.EMAIL_PROVIDER === 'brevo') {
+      try {
+        return await this.sendViaBrevoHttp(to, fullName, subject, htmlContent, plainText);
+      } catch (error: any) {
+        console.error(`❌ Brevo HTTP Error for ${to}:`, error.message || error);
+        console.log(`
+🔑 ========================================================
+   [FALLBACK OTP CODE]
+   To:  ${to}
+   OTP: [ ${otp} ] (Valid for ${expiresInMinutes} mins)
+========================================================
+        `);
+        throw {
+          statusCode: 502,
+          message: error.message || 'Could not deliver email via Brevo API.',
+          code: 'EMAIL_DELIVERY_FAILED',
+        };
+      }
+    }
+
+    // 3. Resend HTTPS API (Port 443)
     if (env.EMAIL_PROVIDER === 'resend') {
       try {
         return await this.sendViaResendHttp(to, subject, htmlContent, plainText);
@@ -192,7 +260,7 @@ export class EmailService {
       }
     }
 
-    // 3. SMTP Mode (Nodemailer)
+    // 4. SMTP Mode (Nodemailer)
     try {
       const transporter = this.getTransporter();
       if (!transporter) {

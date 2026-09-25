@@ -20,7 +20,10 @@ export const env = {
   INITIAL_OFFICER_ZONE: process.env.INITIAL_OFFICER_ZONE || 'Central City Zone',
 
   // Email Service Configuration
-  EMAIL_PROVIDER: (process.env.EMAIL_PROVIDER || 'console').toLowerCase().trim(), // 'resend' | 'smtp' | 'console'
+  EMAIL_PROVIDER: (process.env.EMAIL_PROVIDER || 'console').toLowerCase().trim(), // 'brevo' | 'resend' | 'smtp' | 'console'
+  BREVO_API_KEY: (process.env.BREVO_API_KEY || '').trim(),
+  BREVO_SENDER_EMAIL: (process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || '').trim(),
+  BREVO_SENDER_NAME: (process.env.BREVO_SENDER_NAME || 'WaterWatch').trim(),
   RESEND_API_KEY: (process.env.RESEND_API_KEY || '').trim(),
   SMTP_HOST: (process.env.SMTP_HOST || (process.env.SMTP_USER?.includes('gmail') ? 'smtp.gmail.com' : '')).trim(),
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
