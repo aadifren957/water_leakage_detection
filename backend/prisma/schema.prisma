@@ -1,0 +1,164 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OFFICER
+  WORKER
+}
+
+enum IncidentStatus {
+  IDENTIFIED
+  ACKNOWLEDGED
+  ASSIGNED
+  RESOLVED
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum NotificationType {
+  LEAK_DETECTED
+  ACKNOWLEDGED
+  WORKER_ASSIGNED
+  TASK_RESOLVED
+  SYSTEM
+}
+
+model User {
+  id             String    @id @default(uuid())
+  fullName       String
+  email          String    @unique
+  passwordHash   String
+  role           Role      @default(WORKER)
+  phoneNumber    String?
+  department     String?
+  workerId       String?   @unique // e.g. WRK-001
+  zone           String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  assignedIncidents Incident[]        @relation("AssignedWorker")
+  createdIncidents  Incident[]        @relation("IncidentCreator")
+  historyEntries    IncidentHistory[]
+  notifications     Notification[]
+
+  @@index([role])
+  @@index([email])
+  @@map("users")
+}
+
+model Incident {
+  id                   String          @id @default(uuid())
+  incidentCode         String          @unique // e.g. INC-2026-001
+  title                String
+  description          String
+  location             String
+  zone                 String
+  latitude             Float?
+  longitude            Float?
+  deviceId             String?
+  flowRate             Float           @default(0.0)
+  totalLiters          Float           @default(0.0)
+  leakageDetected      Boolean         @default(true)
+  pumpStatus           Boolean         @default(false)
+  severity             Severity        @default(MEDIUM)
+  status               IncidentStatus  @default(IDENTIFIED)
+  
+  assignedWorkerId     String?
+  assignedWorker       User?           @relation("AssignedWorker", fields: [assignedWorkerId], references: [id], onDelete: SetNull)
+  
+  acknowledgedAt       DateTime?
+  acknowledgedBy       String?
+  assignedAt           DateTime?
+  resolvedAt           DateTime?
+  resolvedBy           String?
+  resolutionNote       String?
+  
+  createdById          String?
+  createdBy            User?           @relation("IncidentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  // Relations
+  history              IncidentHistory[]
+  notifications        Notification[]
+  sensorReadings       SensorReading[]
+
+  @@index([status])
+  @@index([severity])
+  @@index([assignedWorkerId])
+  @@index([deviceId])
+  @@map("incidents")
+}
+
+model IncidentHistory {
+  id             String          @id @default(uuid())
+  incidentId     String
+  incident       Incident        @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  actorId        String?
+  actor          User?           @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorName      String?
+  actorRole      String?
+  action         String          // DETECTED, ACKNOWLEDGED, ASSIGNED, RESOLVED, NOTE
+  previousStatus IncidentStatus?
+  newStatus      IncidentStatus?
+  note           String?
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+
+  @@index([incidentId])
+  @@map("incident_histories")
+}
+
+model Notification {
+  id            String           @id @default(uuid())
+  recipientId   String
+  recipient     User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientRole Role
+  incidentId    String?
+  incident      Incident?        @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  title         String
+  message       String
+  type          NotificationType @default(SYSTEM)
+  isRead        Boolean          @default(false)
+  readAt        DateTime?
+  createdAt     DateTime         @default(now())
+
+  @@index([recipientId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model SensorReading {
+  id                     String    @id @default(uuid())
+  deviceId               String
+  deviceName             String
+  location               String
+  incidentId             String?
+  incident               Incident? @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+  flowRate               Float
+  totalLiters            Float
+  normalBaselineFlowRate Float     @default(3.5)
+  leakageDetected        Boolean   @default(false)
+  pumpStatus             Boolean   @default(false)
+  isOnline               Boolean   @default(true)
+  recordedAt             DateTime  @default(now())
+
+  @@index([deviceId])
+  @@index([recordedAt])
+  @@map("sensor_readings")
+}

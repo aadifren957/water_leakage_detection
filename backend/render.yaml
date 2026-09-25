@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: waterwatch-backend
+    env: node
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: IOT_API_KEY
+        value: waterwatch_iot_esp8266_node_ingest_key_2026
+      - key: INITIAL_OFFICER_EMAIL
+        value: officer@demo.com
+      - key: INITIAL_OFFICER_PASSWORD
+        value: Officer@123
