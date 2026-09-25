@@ -1,173 +1,196 @@
-# 💧 WaterWatch — IoT Water Leakage Detection & Fault Monitoring System
+# 💧 WaterWatch — Smart City IoT Water Leakage Detection & Monitoring System
 
-**WaterWatch** is a modern, modular, production-grade Flutter mobile application built for Smart City Municipal Water Infrastructure Management. It provides distinct, role-based workflows for **Municipal Officers** and **Field Workers** to detect, acknowledge, dispatch, and resolve pipeline water leakage incidents in real time.
-
----
-
-## 🚀 Key Features
-
-### 🏢 Municipal Officer
-- **Executive Dashboard**: Time-aware greeting, active incident metrics (Total Active, Identified, Acknowledged, Assigned, Resolved Today).
-- **Live IoT Sensor Telemetry**: Device ID (`WLS-001`, etc.), online indicator, real-time flow rate (L/min), cumulative volume (L), leakage status indicator, and read-only pump state (auto safety shutoff by ESP8266 logic).
-- **Interactive Flow Rate Charts**: 6-hour trend visualization powered by `fl_chart` with interactive touch tooltips.
-- **Incident Lifecycle Control**:
-  - **Acknowledge**: Review incoming sensor alerts (`Identified` ➔ `Acknowledged`).
-  - **Dispatch**: Assign field workers (`Acknowledged` ➔ `Assigned`) with dynamic capacity checks.
-  - **Audit Trail**: Step-by-step timestamped timeline for every stage.
-- **Historical Logs & Analytics**: Searchable records with Mean Time to Resolution (MTTR) calculation.
-- **Simulate Leak Tool**: One-click test button to trigger a simulated IoT leakage alert.
-
-### 🔧 Field Worker (Rahul Patil — WRK-001)
-- **Technician Dashboard**: Active assignment spotlight, sector telemetry, and workload summary.
-- **Task Isolation**: Workers view only incidents assigned directly to them.
-- **Rapid Resolution Workflow**: Mark tasks resolved (`Assigned` ➔ `Resolved`), add field repair notes, and automatically notify the Municipal Officer.
-- **Capacity & Availability Sync**: Workload dynamically tracks active assignments (`0/3`, `1/3`, `3/3 - Busy`).
-- **Completed History**: Personal repair log and completion duration.
-
-### 🔔 Targeted Notifications & Shared In-Memory Session
-- **Targeted Routing**:
-  - Worker notifications (`taskAssigned`) are dispatched specifically to the assigned worker's user ID.
-  - Officer notifications (`leakDetected`, `taskResolved`) are dispatched to the municipal officer.
-- **Deduplication Engine**: Prevents redundant notification spam.
-- **Single Shared Session State**: Actions performed as Officer (e.g. assigning a task) immediately reflect in Worker's view upon switching accounts without page reloads.
-- **Reset Demo Data**: One-tap action to restore factory mock state for clean demonstrations.
+**WaterWatch** is a production-grade, end-to-end Smart City Water Leakage Detection and Monitoring System. It connects physical **ESP8266 NodeMCU** IoT hardware, a **Node.js/TypeScript/Prisma** cloud backend on Render, a **Supabase PostgreSQL** database, and a **Flutter/Riverpod** mobile application with **User Registration, Email OTP Verification, and Role-Based Access Control**.
 
 ---
 
-## 🔑 Demo Login Credentials
-
-You can log in manually or tap the quick auto-fill chips on the sign-in screen:
-
-| Role | Name | Email | Password | User ID / Worker ID |
-| :--- | :--- | :--- | :--- | :--- |
-| **Municipal Officer** | Rajesh Varma | `officer@demo.com` | `Officer@123` | `USR-OFF-001` |
-| **Field Worker** | Rahul Patil | `worker@demo.com` | `Worker@123` | `USR-WRK-001` (`WRK-001`) |
-| **Field Worker 2** | Priya Sharma | `priya@demo.com` | `Worker@123` | `USR-WRK-002` (`WRK-002`) |
-| **Field Worker 3** | Amit Deshmukh | `amit@demo.com` | `Worker@123` | `USR-WRK-003` (`WRK-003`) |
-| **Field Worker 4** | Neha Kulkarni | `neha@demo.com` | `Worker@123` | `USR-WRK-004` (`WRK-004`, Busy) |
-
----
-
-## 🔄 Strict 4-Stage Lifecycle State Machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> Identified: IoT Anomaly Detected (ESP8266)
-    Identified --> Acknowledged: Officer Acknowledges Alert
-    Acknowledged --> Assigned: Officer Dispatches Available Worker
-    Assigned --> Resolved: Assigned Worker Submits Repair Notes
-    Resolved --> [*]: Restores Normal Operating Flow
-```
-
-- **Identified**: Detected by IoT telemetry. Pump safety auto-shutdown.
-- **Acknowledged**: Officer confirms field response required.
-- **Assigned**: Dispatched to available technician (`isAvailable == true`, `taskCount < 3`).
-- **Resolved**: Worker files repair log. Pump restored online.
-- *Invalid transitions (e.g., resolving before assigning, assigning an unavailable worker, or assigning without acknowledging) are strictly rejected by the domain layer.*
-
----
-
-## 📁 Architecture & Directory Structure
+## 🏗️ System Architecture
 
 ```
-lib/
-├── main.dart                          # App entry point & ProviderScope
-├── app.dart                           # MaterialApp.router configuration
-├── core/
-│   ├── constants/
-│   │   ├── app_colors.dart            # Navy palette & status colors
-│   │   ├── app_constants.dart         # Metadata, limits & demo credentials
-│   │   └── app_typography.dart        # Clean GoogleFonts typography
-│   ├── errors/
-│   │   └── exceptions.dart            # Domain exceptions (InvalidTransition, etc.)
-│   ├── theme/
-│   │   └── app_theme.dart             # Material 3 custom theme
-│   ├── routing/
-│   │   ├── app_router.dart            # GoRouter with role-based guards
-│   │   └── route_names.dart           # Central route constants
-│   └── utils/
-│       └── date_formatter.dart        # Relative timestamps & durations
-├── models/
-│   ├── user_model.dart                # User & Role definitions
-│   ├── incident_model.dart            # Strict 4-status incident model
-│   ├── worker_model.dart              # Worker capacity & availability
-│   ├── sensor_reading_model.dart      # IoT telemetry & hourly history
-│   ├── notification_model.dart        # Targeted in-app alerts
-│   └── timeline_event_model.dart      # Audit trail events
-├── data/
-│   ├── mock_data/                     # Realistic smart city datasets
-│   └── repositories/
-│       ├── mock_data_store.dart       # Central in-memory session store
-│       ├── auth_repository.dart       # Mock authentication repository
-│       ├── incident_repository.dart   # Incident lifecycle state machine
-│       ├── worker_repository.dart     # Workload & capacity repository
-│       ├── sensor_repository.dart     # Read-only IoT telemetry repository
-│       └── notification_repository.dart # Targeted notification repository
-├── providers/
-│   ├── auth_provider.dart             # Auth & Reset Demo Data state
-│   ├── incident_provider.dart         # Incidents & lifecycle actions
-│   ├── worker_provider.dart           # Worker availability providers
-│   ├── sensor_provider.dart           # Telemetry & chart data providers
-│   └── notification_provider.dart     # Reactive user alert stream
-├── features/
-│   ├── auth/                          # LoginScreen with demo autofills
-│   ├── officer/                       # Officer Dashboard, Incidents, History & Shell
-│   ├── worker/                        # Worker Dashboard, Tasks, Details & Shell
-│   ├── notifications/                 # In-App Notifications Screen
-│   └── profile/                       # User Profile, Demo Switcher & Reset
-└── widgets/                           # Reusable UI components
-    ├── status_badge.dart
-    ├── priority_badge.dart
-    ├── summary_card.dart
-    ├── sensor_card.dart
-    ├── flow_chart.dart
-    ├── incident_card.dart
-    ├── timeline_widget.dart
-    ├── empty_state.dart
-    └── app_header.dart
+┌──────────────────────────────────────┐       ┌──────────────────────────────────────┐
+│       ESP8266 IoT Hardware Node      │       │          Flutter Mobile App          │
+│  - YF-S201 Hall Flow Sensor (D5)     │       │  - Riverpod State Management         │
+│  - LM393 Water Leak Detector (D6)    │       │  - GoRouter Role Guards              │
+│  - Active Pump Control Relay (D1)    │       │  - Municipal Officer Dashboard       │
+│  - HTTPS Telemetry Ingestion         │       │  - Field Worker Task Resolution      │
+└──────────────────┬───────────────────┘       └──────────────────┬───────────────────┘
+                   │ HTTPS POST /api/iot/readings                 │ REST API / JWT
+                   ▼                                              ▼
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                       Express.js + TypeScript Backend (Render)                      │
+│  - Rate Limiting (express-rate-limit) & Helmet Security                             │
+│  - Zod Request Validation & BCrypt Password Hashing                                 │
+│  - Multi-Provider Email Service (Resend / SMTP / Console)                           │
+│  - Cryptographic 6-Digit OTP Engine with SHA-256 Hashing                            │
+└──────────────────────────────────────────┬──────────────────────────────────────────┘
+                                           │ Prisma ORM
+                                           ▼
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           Supabase PostgreSQL Cloud Database                        │
+│  - users, verification_tokens, incidents, incident_histories, notifications         │
+└─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🧪 Automated Testing
+## 🔑 Authentication & User Roles
 
-The codebase includes comprehensive unit and widget tests:
+WaterWatch supports two distinct user roles with strict security policies:
 
+### 1. Field Worker (`WORKER`)
+- **Self-Registration**: Publicly available on the mobile application signup screen.
+- **Email OTP Verification**: Upon registration, an unverified account (`PENDING_VERIFICATION`) is created, and a cryptographically secure 6-digit OTP is delivered to the registered email address.
+- **Account Activation**: Entering the valid OTP marks the email verified (`emailVerifiedAt = now()`), activates the account (`accountStatus = ACTIVE`), issues a JWT session, and directly logs the worker in.
+- **Worker Capabilities**: Views assigned tasks, inspects sensor flow telemetry at incident locations, marks repairs resolved with notes, and updates workload availability.
+
+### 2. Municipal Officer (`OFFICER`)
+- **Protected Provisioning**: Public registration as Municipal Officer is **strictly prohibited**. The backend rejects any attempt to pass `role: OFFICER` during public signup.
+- **Provisioning Method**: Officer accounts are created directly by system administration via environment configuration (`INITIAL_OFFICER_*`) or secure administrative scripts.
+- **Officer Capabilities**: Real-time pipeline monitoring, live telemetry charts, incident acknowledgment, worker dispatch with capacity checks, and complete audit history.
+
+---
+
+## 📧 Email Provider Setup (OTP & Password Recovery)
+
+The backend features a multi-provider email delivery engine configured via `.env`:
+
+### Option A: Resend (Recommended Cloud Provider)
+1. Sign up at [Resend.com](https://resend.com).
+2. Generate an API Key (e.g. `re_123456789_abcdefg`).
+3. Set in your `.env` (or Render Dashboard):
+   ```env
+   EMAIL_PROVIDER=resend
+   RESEND_API_KEY=re_your_api_key_here
+   EMAIL_FROM="WaterWatch Support <onboarding@resend.dev>"
+   ```
+
+### Option B: Custom SMTP (Gmail, Brevo, SendGrid, Amazon SES)
+1. For Gmail: Generate an **App Password** from Google Account Security.
+2. Set in `.env`:
+   ```env
+   EMAIL_PROVIDER=smtp
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-16-char-app-password
+   SMTP_SECURE=false
+   EMAIL_FROM="WaterWatch Support <your-email@gmail.com>"
+   ```
+
+### Option C: Console / Dev Mode (Local Testing)
+If `EMAIL_PROVIDER=console`, OTPs are safely logged to the server console for instantaneous testing without needing an external email API.
+
+---
+
+## 📡 REST API Reference
+
+### 🔐 Authentication Endpoints (`/api/auth`)
+
+| Method | Endpoint | Description | Request Body |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Register new Field Worker (sends OTP) | `{ fullName, email, password, phoneNumber?, workerId?, zone? }` |
+| `POST` | `/api/auth/verify-email` | Verify 6-digit OTP and activate user | `{ email, otp }` |
+| `POST` | `/api/auth/resend-otp` | Resend fresh OTP (60s cooldown) | `{ email }` |
+| `POST` | `/api/auth/login` | Sign in with email & password | `{ email, password }` |
+| `POST` | `/api/auth/forgot-password` | Request password reset OTP | `{ email }` |
+| `POST` | `/api/auth/reset-password` | Reset password using 6-digit OTP | `{ email, otp, newPassword }` |
+| `GET` | `/api/auth/me` | Get authenticated user profile | *(Bearer Token required)* |
+| `POST` | `/api/auth/logout` | Terminate session | *(Bearer Token required)* |
+
+### 🚨 Incident Lifecycle Endpoints (`/api/incidents`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/incidents` | List incidents (filter by status, severity, zone) |
+| `GET` | `/api/incidents/:id` | Get incident details, timeline & live sensor feed |
+| `POST` | `/api/incidents` | Manually report incident (Officer only) |
+| `PATCH` | `/api/incidents/:id/acknowledge` | Acknowledge incident (`IDENTIFIED` ➔ `ACKNOWLEDGED`) |
+| `PATCH` | `/api/incidents/:id/assign` | Assign field technician (`ACKNOWLEDGED` ➔ `ASSIGNED`) |
+| `PATCH` | `/api/incidents/:id/resolve` | Resolve incident (`ASSIGNED` ➔ `RESOLVED`) |
+
+### 📟 IoT Telemetry Ingestion (`/api/iot`)
+
+| Method | Endpoint | Headers | Request Body |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/iot/readings` | `X-API-Key: <IOT_API_KEY>` | `{ deviceId, flowRate, totalLiters, leakageDetected, pumpStatus }` |
+
+---
+
+## 🗄️ Database Schema & Migrations
+
+The database schema is managed with **Prisma ORM** targeting **Supabase PostgreSQL**:
+
+### Applying Database Updates
 ```bash
-flutter test
+cd backend
+npx prisma generate
+npx prisma db push
 ```
 
-### Test Coverage Highlights:
-- **`incident_lifecycle_test.dart`**: Verifies valid transitions (`Identified` ➔ `Acknowledged` ➔ `Assigned` ➔ `Resolved`) and validates that invalid transitions and unauthorized resolutions are rejected.
-- **`worker_workload_test.dart`**: Verifies active task increments, capacity limits (`3/3`), `isAvailable` toggling, and decrements on task resolution.
-- **`notification_dispatch_test.dart`**: Verifies exact recipient routing (`USR-WRK-001` vs `USR-OFF-001`) and notification deduplication.
-- **`auth_repository_test.dart`**: Tests credentials validation and role mapping (`officer@demo.com` ➔ Rajesh Varma, `worker@demo.com` ➔ Rahul Patil).
-- **`dashboard_sync_test.dart`**: Verifies cross-dashboard state synchronization across Riverpod providers in shared memory.
+### Models Overview
+- **`User`**: User profile, hashed password, role (`OFFICER`, `WORKER`), account status (`PENDING_VERIFICATION`, `ACTIVE`, `PENDING_APPROVAL`, `SUSPENDED`), and verification timestamp (`emailVerifiedAt`).
+- **`VerificationToken`**: Hashed 6-digit OTP (`tokenHash`), purpose (`EMAIL_VERIFICATION`, `PASSWORD_RESET`), expiration (`expiresAt`), and attempt counter (`attempts`).
+- **`Incident`**: Pipeline leakage incident with status state machine (`IDENTIFIED`, `ACKNOWLEDGED`, `ASSIGNED`, `RESOLVED`).
+- **`IncidentHistory`**: Immutable chronological audit trail.
+- **`Notification`**: Targeted user alerts with read states.
+- **`SensorReading`**: Historical flow rate and volume telemetry.
 
 ---
 
-## 🛠️ Running the Application
+## 🚀 Environment Variables (Render & Local)
 
-1. **Install Dependencies**:
-   ```bash
-   flutter pub get
-   ```
+Add these environment variables in your Render Web Service dashboard:
 
-2. **Run Static Analyzer**:
-   ```bash
-   flutter analyze
-   ```
+```env
+PORT=5001
+NODE_ENV=production
+DATABASE_URL="postgresql://postgres:[PASSWORD]@[REF].supabase.co:5432/postgres?sslmode=require"
+DIRECT_URL="postgresql://postgres:[PASSWORD]@[REF].supabase.co:5432/postgres?sslmode=require"
+JWT_SECRET="waterwatch_super_secure_jwt_secret_32_characters_long"
+JWT_EXPIRES_IN="7d"
+IOT_API_KEY="waterwatch_iot_esp8266_node_ingest_key_2026"
+CORS_ORIGIN="*"
 
-3. **Run Mobile App**:
-   ```bash
-   flutter run
-   ```
+# Email Service
+EMAIL_PROVIDER="resend" # or "smtp"
+RESEND_API_KEY="re_your_api_key_here"
+EMAIL_FROM="WaterWatch Support <onboarding@resend.dev>"
+
+# OTP Rules
+OTP_EXPIRY_MINUTES=10
+OTP_RESEND_COOLDOWN_SECONDS=60
+OTP_MAX_ATTEMPTS=5
+
+# Initial Municipal Officer
+INITIAL_OFFICER_NAME="Rajesh Varma"
+INITIAL_OFFICER_EMAIL="officer@demo.com"
+INITIAL_OFFICER_PASSWORD="Officer@123"
+```
 
 ---
 
-## 🔮 Future Backend Integration Roadmap
+## 🧪 Testing
 
-When connecting to the future production backend:
-1. **Repository Swapping**: Replace `MockIncidentRepository`, `MockAuthRepository`, etc. with Supabase / REST API implementations conforming to the same abstract repository interfaces.
-2. **Real IoT Sensor Feeds**: Connect `SensorRepository` to the MQTT broker receiving ESP8266 telemetry packets.
-3. **Push Notifications**: Replace the simulated in-memory notification stream with Firebase Cloud Messaging (FCM).
+### Backend Automated Test Suite
+Run the backend tests with Jest:
+```bash
+cd backend
+npm test
+```
+*Coverage includes: Worker registration, duplicate email rejection, weak password rejection, role security, 6-digit OTP generation, SHA-256 hash validation, OTP attempt limits & expiration, login activation checks, password reset with OTP, and incident lifecycle transitions.*
+
+### Flutter Static Analysis
+```bash
+flutter analyze
+```
+
+---
+
+## 📱 Building the Android APK
+
+Build the standalone Android release APK:
+```bash
+flutter build apk --release
+```
+The output APK is located at:
+`build/app/outputs/flutter-apk/app-release.apk`

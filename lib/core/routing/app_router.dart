@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../features/auth/login_screen.dart';
+import '../../features/auth/signup_screen.dart';
+import '../../features/auth/verify_otp_screen.dart';
+import '../../features/auth/forgot_password_screen.dart';
+import '../../features/auth/reset_password_screen.dart';
 import '../../features/officer/officer_shell.dart';
 import '../../features/officer/officer_dashboard_screen.dart';
 import '../../features/officer/officer_incidents_screen.dart';
@@ -31,35 +35,63 @@ final routerProvider = Provider<GoRouter>((ref) {
         : RouteNames.login,
     redirect: (context, state) {
       final isLoggedIn = authState.isAuthenticated;
-      final isLoggingIn = state.uri.path == RouteNames.login;
+      final currentPath = state.uri.path;
 
-      // 1. Unauthenticated users must stay on login
+      final isAuthRoute = currentPath == RouteNames.login ||
+          currentPath == RouteNames.signup ||
+          currentPath == RouteNames.verifyOtp ||
+          currentPath == RouteNames.forgotPassword ||
+          currentPath == RouteNames.resetPassword;
+
+      // 1. Unauthenticated users: allow access to auth screens, otherwise redirect to login
       if (!isLoggedIn) {
-        return isLoggingIn ? null : RouteNames.login;
+        return isAuthRoute ? null : RouteNames.login;
       }
 
-      // 2. Authenticated users going to login get redirected to their dashboard
-      if (isLoggingIn) {
+      // 2. Authenticated users attempting to view auth routes get redirected to dashboard
+      if (isAuthRoute) {
         return authState.isOfficer ? RouteNames.officerDashboard : RouteNames.workerDashboard;
       }
 
       // 3. Role-based guard: Workers cannot access officer routes
-      if (authState.isWorker && state.uri.path.startsWith('/officer')) {
+      if (authState.isWorker && currentPath.startsWith('/officer')) {
         return RouteNames.workerDashboard;
       }
 
       // 4. Role-based guard: Officers cannot access worker routes
-      if (authState.isOfficer && state.uri.path.startsWith('/worker')) {
+      if (authState.isOfficer && currentPath.startsWith('/worker')) {
         return RouteNames.officerDashboard;
       }
 
       return null;
     },
     routes: [
-      // Auth
+      // Authentication Routes
       GoRoute(
         path: RouteNames.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.signup,
+        builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.verifyOtp,
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return VerifyOtpScreen(email: email);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.forgotPassword,
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.resetPassword,
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return ResetPasswordScreen(email: email);
+        },
       ),
 
       // Officer Shell & Nested Routes

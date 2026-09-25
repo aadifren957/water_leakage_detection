@@ -9,16 +9,52 @@ export class AuthController {
       const result = await AuthService.login(req.body);
       sendSuccess(res, 'Login successful', result);
     } catch (error: any) {
-      sendError(res, error.message || 'Login failed', error.statusCode || 400, error.code);
+      sendError(res, error.message || 'Login failed', error.statusCode || 400, error.code, error.data);
     }
   }
 
   static async registerWorker(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const result = await AuthService.registerWorker(req.body);
-      sendSuccess(res, 'Field worker registered successfully', result, 201);
+      sendSuccess(res, result.message, result, 201);
     } catch (error: any) {
       sendError(res, error.message || 'Registration failed', error.statusCode || 400, error.code);
+    }
+  }
+
+  static async verifyEmail(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const result = await AuthService.verifyEmail(req.body);
+      sendSuccess(res, 'Email verified and account activated successfully', result);
+    } catch (error: any) {
+      sendError(res, error.message || 'Verification failed', error.statusCode || 400, error.code);
+    }
+  }
+
+  static async resendOtp(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const result = await AuthService.resendOtp(req.body);
+      sendSuccess(res, result.message, result);
+    } catch (error: any) {
+      sendError(res, error.message || 'Failed to resend code', error.statusCode || 400, error.code, error.data);
+    }
+  }
+
+  static async forgotPassword(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const result = await AuthService.forgotPassword(req.body);
+      sendSuccess(res, result.message, result);
+    } catch (error: any) {
+      sendError(res, error.message || 'Password reset request failed', error.statusCode || 400, error.code);
+    }
+  }
+
+  static async resetPassword(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const result = await AuthService.resetPassword(req.body);
+      sendSuccess(res, result.message, result);
+    } catch (error: any) {
+      sendError(res, error.message || 'Password reset failed', error.statusCode || 400, error.code);
     }
   }
 

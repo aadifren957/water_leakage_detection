@@ -24,6 +24,8 @@ class UserModel {
   final String? workerId; // WRK-001 for field workers
   final String? phoneNumber;
   final String? zone;
+  final String accountStatus; // ACTIVE, PENDING_VERIFICATION, SUSPENDED
+  final bool isEmailVerified;
 
   const UserModel({
     required this.id,
@@ -34,6 +36,8 @@ class UserModel {
     this.workerId,
     this.phoneNumber,
     this.zone,
+    this.accountStatus = 'ACTIVE',
+    this.isEmailVerified = true,
   });
 
   UserModel copyWith({
@@ -45,6 +49,8 @@ class UserModel {
     String? workerId,
     String? phoneNumber,
     String? zone,
+    String? accountStatus,
+    bool? isEmailVerified,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -55,6 +61,8 @@ class UserModel {
       workerId: workerId ?? this.workerId,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       zone: zone ?? this.zone,
+      accountStatus: accountStatus ?? this.accountStatus,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
     );
   }
 
@@ -68,6 +76,8 @@ class UserModel {
       'workerId': workerId,
       'phoneNumber': phoneNumber,
       'zone': zone,
+      'accountStatus': accountStatus,
+      'isEmailVerified': isEmailVerified,
     };
   }
 
@@ -77,10 +87,12 @@ class UserModel {
       name: json['name'] as String,
       email: json['email'] as String,
       role: UserRole.values.byName(json['role'] as String),
-      department: json['department'] as String,
+      department: json['department'] as String? ?? '',
       workerId: json['workerId'] as String?,
       phoneNumber: json['phoneNumber'] as String?,
       zone: json['zone'] as String?,
+      accountStatus: json['accountStatus'] as String? ?? 'ACTIVE',
+      isEmailVerified: json['isEmailVerified'] as bool? ?? true,
     );
   }
 

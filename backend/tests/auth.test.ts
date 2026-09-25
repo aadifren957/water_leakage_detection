@@ -83,7 +83,7 @@ describe('Authentication & Authorization API Tests', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.user.role).toBe('fieldWorker');
-    expect(res.body.data.user.workerId).toBe(uniqueWorkerId);
+    expect(res.body.data.requiresVerification).toBe(true);
+    expect(res.body.data.email).toBe(uniqueEmail.toLowerCase());
   });
 });

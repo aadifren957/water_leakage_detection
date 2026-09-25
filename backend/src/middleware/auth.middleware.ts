@@ -22,14 +22,14 @@ export async function authenticate(
   try {
     const decoded = verifyToken(token);
     
-    // Verify user still exists and is active in DB
+    // Verify user still exists, is active, and is verified in DB
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, workerId: true, fullName: true, isActive: true },
+      select: { id: true, email: true, role: true, accountStatus: true, workerId: true, fullName: true, isActive: true },
     });
 
-    if (!user || !user.isActive) {
-      sendError(res, 'Account is inactive or does not exist.', 401, 'ACCOUNT_INACTIVE');
+    if (!user || !user.isActive || user.accountStatus !== 'ACTIVE') {
+      sendError(res, 'Account is inactive, unverified, or does not exist.', 401, 'ACCOUNT_INACTIVE');
       return;
     }
 
@@ -37,6 +37,7 @@ export async function authenticate(
       userId: user.id,
       email: user.email,
       role: user.role,
+      accountStatus: user.accountStatus,
       workerId: user.workerId,
       fullName: user.fullName,
     };

@@ -18,4 +18,19 @@ export const env = {
   INITIAL_OFFICER_DEPARTMENT: process.env.INITIAL_OFFICER_DEPARTMENT || 'Municipal Water Supply & Sewerage Board',
   INITIAL_OFFICER_PHONE: process.env.INITIAL_OFFICER_PHONE || '+91 98765 43210',
   INITIAL_OFFICER_ZONE: process.env.INITIAL_OFFICER_ZONE || 'Central City Zone',
+
+  // Email Service Configuration
+  EMAIL_PROVIDER: (process.env.EMAIL_PROVIDER || 'console').toLowerCase(), // 'resend' | 'smtp' | 'console'
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  SMTP_HOST: process.env.SMTP_HOST || '',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  SMTP_SECURE: process.env.SMTP_SECURE === 'true',
+  EMAIL_FROM: process.env.EMAIL_FROM || 'WaterWatch <onboarding@resend.dev>',
+
+  // OTP Configuration
+  OTP_EXPIRY_MINUTES: parseInt(process.env.OTP_EXPIRY_MINUTES || '10', 10),
+  OTP_RESEND_COOLDOWN_SECONDS: parseInt(process.env.OTP_RESEND_COOLDOWN_SECONDS || '60', 10),
+  OTP_MAX_ATTEMPTS: parseInt(process.env.OTP_MAX_ATTEMPTS || '5', 10),
 };

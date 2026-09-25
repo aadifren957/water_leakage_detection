@@ -1,4 +1,4 @@
-import { IncidentStatus, NotificationType, Role, Severity } from '@prisma/client';
+import { IncidentStatus, NotificationType, Role, Severity, AccountStatus } from '@prisma/client';
 import { prisma } from '../config/db';
 import { NotificationService } from './notification.service';
 import { CreateIncidentInput, IncidentQueryInput } from '../validators/incident.validator';
@@ -190,7 +190,7 @@ export class IncidentService {
       incidentId: incident.id,
     });
 
-    return this.getIncidentById(incident.id, creatorUser || { userId: '', email: '', role: Role.OFFICER, fullName: 'System' });
+    return this.getIncidentById(incident.id, creatorUser || { userId: '', email: '', role: Role.OFFICER, accountStatus: AccountStatus.ACTIVE, fullName: 'System' });
   }
 
   /**

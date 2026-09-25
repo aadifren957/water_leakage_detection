@@ -1,17 +1,9 @@
-import 'package:flutter/foundation.dart';
-
 class ApiConfig {
   ApiConfig._();
 
   /// Default API base URL:
-  /// - Web / Windows Desktop: http://localhost:5001/api
-  /// - Android Emulator: http://10.0.2.2:5001/api
-  /// - Real Mobile Device: http://LAN-IP:5001/api
-  static String defaultBaseUrl = kIsWeb
-      ? 'http://localhost:5001/api'
-      : (defaultTargetPlatform == TargetPlatform.android
-          ? 'http://10.0.2.2:5001/api'
-          : 'http://localhost:5001/api');
+  /// - Live Cloud Backend: https://waterwatch-backend-t186.onrender.com/api
+  static String defaultBaseUrl = 'https://waterwatch-backend-t186.onrender.com/api';
 
   static String baseUrl = defaultBaseUrl;
 

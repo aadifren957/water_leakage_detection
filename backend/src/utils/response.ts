@@ -20,13 +20,13 @@ export function sendError(
   message: string,
   statusCode = 400,
   code?: string,
-  errors?: any
+  dataOrErrors?: any
 ): Response {
   const body: ApiResponse = {
     success: false,
     message,
     ...(code && { code }),
-    ...(errors && { errors }),
+    ...(dataOrErrors && { data: dataOrErrors, errors: dataOrErrors }),
   };
   return res.status(statusCode).json(body);
 }

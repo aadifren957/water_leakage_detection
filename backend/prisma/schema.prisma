@@ -13,6 +13,18 @@ enum Role {
   WORKER
 }
 
+enum AccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  PENDING_APPROVAL
+  SUSPENDED
+}
+
+enum VerificationPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 enum IncidentStatus {
   IDENTIFIED
   ACKNOWLEDGED
@@ -36,18 +48,20 @@ enum NotificationType {
 }
 
 model User {
-  id             String    @id @default(uuid())
-  fullName       String
-  email          String    @unique
-  passwordHash   String
-  role           Role      @default(WORKER)
-  phoneNumber    String?
-  department     String?
-  workerId       String?   @unique // e.g. WRK-001
-  zone           String?
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id              String         @id @default(uuid())
+  fullName        String
+  email           String         @unique
+  passwordHash    String
+  role            Role           @default(WORKER)
+  accountStatus   AccountStatus  @default(ACTIVE)
+  emailVerifiedAt DateTime?
+  phoneNumber     String?
+  department      String?
+  workerId        String?        @unique // e.g. WRK-001
+  zone            String?
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   // Relations
   assignedIncidents Incident[]        @relation("AssignedWorker")
@@ -57,7 +71,24 @@ model User {
 
   @@index([role])
   @@index([email])
+  @@index([accountStatus])
   @@map("users")
+}
+
+model VerificationToken {
+  id         String              @id @default(uuid())
+  userId     String?
+  email      String
+  tokenHash  String
+  purpose    VerificationPurpose
+  expiresAt  DateTime
+  attempts   Int                 @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime            @default(now())
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+  @@map("verification_tokens")
 }
 
 model Incident {

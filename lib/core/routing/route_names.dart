@@ -1,7 +1,12 @@
 class RouteNames {
   RouteNames._();
 
+  // Authentication Routes
   static const String login = '/login';
+  static const String signup = '/signup';
+  static const String verifyOtp = '/verify-otp';
+  static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
   
   // Officer Routes
   static const String officerDashboard = '/officer';

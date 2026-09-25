@@ -109,7 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
                     // Quick Demo Credentials Selector Card
                     Container(
@@ -227,10 +227,62 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
 
-                    // Error Message Banner
-                    if (authState.errorMessage != null) ...[
+                    // Unverified Email Alert Box
+                    if (authState.pendingVerificationEmail != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.priorityHigh.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.priorityHigh.withValues(alpha: 0.4)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(Icons.mark_email_unread_rounded, color: AppColors.priorityHigh, size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Email Verification Required',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryNavy,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Your account is pending verification. Please enter the OTP code sent to ${authState.pendingVerificationEmail}.',
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  final email = authState.pendingVerificationEmail!;
+                                  context.push('/verify-otp?email=${Uri.encodeComponent(email)}');
+                                },
+                                icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
+                                label: const Text('Enter OTP & Verify Now'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primaryBlue,
+                                  side: const BorderSide(color: AppColors.primaryBlue),
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ] else if (authState.errorMessage != null) ...[
+                      // General Error Message Banner
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
@@ -289,14 +341,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Password Field
-                    const Text(
-                      'Password',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                    // Password Field Header + Forgot Password Link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Password',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => context.push('/forgot-password'),
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryBlue,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     TextFormField(
@@ -356,8 +424,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                     ),
+                    const SizedBox(height: 18),
 
-                    const SizedBox(height: 20),
+                    // Register Link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Don't have an account? ",
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        ),
+                        InkWell(
+                          onTap: () => context.push('/signup'),
+                          child: const Text(
+                            'Sign Up',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryBlue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
                     Center(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
