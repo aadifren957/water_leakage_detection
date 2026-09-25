@@ -10,6 +10,9 @@ import { env } from './config/env';
 
 export const app = express();
 
+// Enable trust proxy for Render / reverse proxies so rate limiter works accurately with X-Forwarded-For
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 

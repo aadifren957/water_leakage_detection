@@ -5,6 +5,7 @@ export const authLimiter = rateLimit({
   max: 40, // Limit each IP to 40 requests per windowMs for auth
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     success: false,
     message: 'Too many authentication attempts from this IP. Please try again after 15 minutes.',
@@ -17,6 +18,7 @@ export const otpVerifyLimiter = rateLimit({
   max: 25, // Limit OTP verification attempts
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     success: false,
     message: 'Too many OTP verification attempts. Please wait before trying again.',
@@ -29,6 +31,7 @@ export const otpResendLimiter = rateLimit({
   max: 10, // Limit OTP resend requests
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     success: false,
     message: 'Too many OTP resend requests. Please wait before requesting another code.',
@@ -41,6 +44,7 @@ export const passwordResetLimiter = rateLimit({
   max: 10, // Limit password reset attempts
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     success: false,
     message: 'Too many password reset requests from this IP. Please try again later.',
@@ -53,9 +57,11 @@ export const apiLimiter = rateLimit({
   max: 300, // Limit each IP to 300 requests per minute
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     success: false,
     message: 'Too many requests. Please slow down.',
     code: 'RATE_LIMIT_EXCEEDED',
   },
 });
+
