@@ -20,14 +20,14 @@ export const env = {
   INITIAL_OFFICER_ZONE: process.env.INITIAL_OFFICER_ZONE || 'Central City Zone',
 
   // Email Service Configuration
-  EMAIL_PROVIDER: (process.env.EMAIL_PROVIDER || 'console').toLowerCase(), // 'resend' | 'smtp' | 'console'
-  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
-  SMTP_HOST: process.env.SMTP_HOST || '',
+  EMAIL_PROVIDER: (process.env.EMAIL_PROVIDER || 'console').toLowerCase().trim(), // 'resend' | 'smtp' | 'console'
+  RESEND_API_KEY: (process.env.RESEND_API_KEY || '').trim(),
+  SMTP_HOST: (process.env.SMTP_HOST || (process.env.SMTP_USER?.includes('gmail') ? 'smtp.gmail.com' : '')).trim(),
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
-  SMTP_USER: process.env.SMTP_USER || '',
-  SMTP_PASS: process.env.SMTP_PASS || '',
-  SMTP_SECURE: process.env.SMTP_SECURE === 'true',
-  EMAIL_FROM: process.env.EMAIL_FROM || 'WaterWatch <onboarding@resend.dev>',
+  SMTP_USER: (process.env.SMTP_USER || '').trim(),
+  SMTP_PASS: (process.env.SMTP_PASS || '').trim(),
+  SMTP_SECURE: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
+  EMAIL_FROM: (process.env.EMAIL_FROM || (process.env.SMTP_USER ? `WaterWatch <${process.env.SMTP_USER.trim()}>` : 'WaterWatch <onboarding@resend.dev>')).trim(),
 
   // OTP Configuration
   OTP_EXPIRY_MINUTES: parseInt(process.env.OTP_EXPIRY_MINUTES || '10', 10),

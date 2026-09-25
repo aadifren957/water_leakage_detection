@@ -135,7 +135,7 @@ export class EmailService {
     `;
 
     // Console / Development mode
-    if (env.EMAIL_PROVIDER === 'console' || (!env.RESEND_API_KEY && !env.SMTP_HOST)) {
+    if (env.EMAIL_PROVIDER === 'console' || (!env.RESEND_API_KEY && !env.SMTP_USER && !env.SMTP_HOST)) {
       console.log(`
 📧 ========================================================
    [DEV/CONSOLE EMAIL SERVICE]
@@ -151,8 +151,9 @@ export class EmailService {
     try {
       const transporter = this.getTransporter();
       if (!transporter) {
-        console.warn('⚠️ No email transporter configured. Email not sent.');
-        return false;
+        console.warn('⚠️ No email transporter configured. Printing OTP to console:');
+        console.log(`🔑 OTP for ${to}: [ ${otp} ]`);
+        return true;
       }
 
       const info = await transporter.sendMail({
@@ -163,17 +164,28 @@ export class EmailService {
         text: `Hello ${fullName},\n\nYour WaterWatch verification code is: ${otp}\n\nThis code expires in ${expiresInMinutes} minutes.\n\nWaterWatch Smart City Team`,
       });
 
-      console.log(`✉️ OTP email sent to ${to}: MessageId=${info.messageId}`);
+      console.log(`✉️ OTP email successfully delivered to ${to} (MessageId: ${info.messageId})`);
       return true;
     } catch (error: any) {
       console.error(`❌ Failed to send email to ${to}:`, error.message || error);
-      // If live sending fails, log OTP in server console as fallback so the developer/user isn't completely blocked
-      console.log(`[FALLBACK LOG] OTP for ${to} is: ${otp}`);
+      if (error.response) {
+        console.error(`[SMTP SERVER RESPONSE]: ${error.response}`);
+      }
+      // Log OTP in server console as fallback so the developer/user isn't completely blocked
+      console.log(`
+🔑 ========================================================
+   [FALLBACK OTP CODE]
+   To:  ${to}
+   OTP: [ ${otp} ] (Valid for ${expiresInMinutes} mins)
+   Note: Real email delivery failed. Check your SMTP credentials.
+========================================================
+      `);
       throw {
         statusCode: 502,
-        message: 'Could not deliver verification email. Please check your email address or try again in a few moments.',
+        message: 'Could not deliver verification email. Please verify your email settings or try again.',
         code: 'EMAIL_DELIVERY_FAILED',
       };
     }
   }
 }
+
