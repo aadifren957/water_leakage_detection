@@ -16,15 +16,28 @@ export class EmailService {
     if (this.transporter) return this.transporter;
 
     if (env.EMAIL_PROVIDER === 'smtp') {
-      this.transporter = nodemailer.createTransport({
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        secure: env.SMTP_SECURE,
-        auth: {
-          user: env.SMTP_USER,
-          pass: env.SMTP_PASS,
-        },
-      });
+      const isGmail = env.SMTP_HOST.toLowerCase().includes('gmail') || env.SMTP_USER.toLowerCase().includes('gmail.com');
+      const cleanPass = env.SMTP_PASS.replace(/\s+/g, ''); // Strip any spaces from Google App Password
+
+      if (isGmail) {
+        this.transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: env.SMTP_USER,
+            pass: cleanPass,
+          },
+        });
+      } else {
+        this.transporter = nodemailer.createTransport({
+          host: env.SMTP_HOST,
+          port: env.SMTP_PORT,
+          secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
+          auth: {
+            user: env.SMTP_USER,
+            pass: cleanPass,
+          },
+        });
+      }
       return this.transporter;
     }
 
@@ -36,7 +49,7 @@ export class EmailService {
         secure: true,
         auth: {
           user: 'resend',
-          pass: env.RESEND_API_KEY,
+          pass: env.RESEND_API_KEY.trim(),
         },
       });
       return this.transporter;
