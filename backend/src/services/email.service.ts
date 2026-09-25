@@ -41,21 +41,42 @@ export class EmailService {
       return this.transporter;
     }
 
-    if (env.EMAIL_PROVIDER === 'resend') {
-      // Resend SMTP endpoint
-      this.transporter = nodemailer.createTransport({
-        host: 'smtp.resend.com',
-        port: 465,
-        secure: true,
-        auth: {
-          user: 'resend',
-          pass: env.RESEND_API_KEY.trim(),
-        },
-      });
-      return this.transporter;
+    return null;
+  }
+
+  /**
+   * Send email using Resend HTTPS REST API (Port 443 - Works seamlessly on Render)
+   */
+  private static async sendViaResendHttp(to: string, subject: string, html: string, text: string): Promise<boolean> {
+    const apiKey = env.RESEND_API_KEY.trim();
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY is not configured in environment variables.');
     }
 
-    return null;
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: env.EMAIL_FROM || 'WaterWatch <onboarding@resend.dev>',
+        to: [to],
+        subject,
+        html,
+        text,
+      }),
+    });
+
+    const data = (await response.json()) as any;
+
+    if (!response.ok) {
+      const errorMsg = data?.message || JSON.stringify(data);
+      throw new Error(`Resend API Error (${response.status}): ${errorMsg}`);
+    }
+
+    console.log(`✉️ OTP email successfully delivered to ${to} via Resend HTTPS API (ID: ${data.id})`);
+    return true;
   }
 
   /**
@@ -134,7 +155,9 @@ export class EmailService {
 </html>
     `;
 
-    // Console / Development mode
+    const plainText = `Hello ${fullName},\n\nYour WaterWatch verification code is: ${otp}\n\nThis code expires in ${expiresInMinutes} minutes.\n\nWaterWatch Smart City Team`;
+
+    // 1. Console / Development mode
     if (env.EMAIL_PROVIDER === 'console' || (!env.RESEND_API_KEY && !env.SMTP_USER && !env.SMTP_HOST)) {
       console.log(`
 📧 ========================================================
@@ -148,6 +171,28 @@ export class EmailService {
       return true;
     }
 
+    // 2. Resend HTTPS API (Port 443 - Recommended for cloud hosting like Render)
+    if (env.EMAIL_PROVIDER === 'resend') {
+      try {
+        return await this.sendViaResendHttp(to, subject, htmlContent, plainText);
+      } catch (error: any) {
+        console.error(`❌ Resend HTTP Error for ${to}:`, error.message || error);
+        console.log(`
+🔑 ========================================================
+   [FALLBACK OTP CODE]
+   To:  ${to}
+   OTP: [ ${otp} ] (Valid for ${expiresInMinutes} mins)
+========================================================
+        `);
+        throw {
+          statusCode: 502,
+          message: error.message || 'Could not deliver email via Resend API.',
+          code: 'EMAIL_DELIVERY_FAILED',
+        };
+      }
+    }
+
+    // 3. SMTP Mode (Nodemailer)
     try {
       const transporter = this.getTransporter();
       if (!transporter) {
@@ -161,10 +206,10 @@ export class EmailService {
         to,
         subject,
         html: htmlContent,
-        text: `Hello ${fullName},\n\nYour WaterWatch verification code is: ${otp}\n\nThis code expires in ${expiresInMinutes} minutes.\n\nWaterWatch Smart City Team`,
+        text: plainText,
       });
 
-      console.log(`✉️ OTP email successfully delivered to ${to} (MessageId: ${info.messageId})`);
+      console.log(`✉️ OTP email successfully delivered to ${to} via SMTP (MessageId: ${info.messageId})`);
       return true;
     } catch (error: any) {
       console.error(`❌ Failed to send email to ${to}:`, error.message || error);
@@ -188,4 +233,3 @@ export class EmailService {
     }
   }
 }
-
